@@ -1,0 +1,49 @@
+{
+  "uid": "pyrenex-drift",
+  "title": "Pyrenex Drift — suivi dérive v2",
+  "tags": ["pyrenex", "m6", "drift"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-90d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "PSI par feature (batch drift hebdo)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "description": "Gauge poussée par le job de calcul de dérive (scripts/drift_detection). Seuils : 0.1 / 0.25.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 0.1 }, { "color": "red", "value": 0.25 } ] } }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "pyrenex_feature_psi", "legendFormat": "{{feature}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "F1 macro sur 12 semaines (eval continue)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "description": "Gauge pyrenex_f1_macro poussée par evaluate_model (M5-B2) à chaque run d'éval.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "pyrenex_f1_macro", "legendFormat": "F1 macro" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Distribution des probabilités prédites (live, métrique M5)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "description": "Quantiles de pyrenex_prediction_proba (histogramme exposé par le service model M5). Un glissement des quantiles = signal de dérive en temps réel.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "max": 1 }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.5, sum(rate(pyrenex_prediction_proba_bucket[1h])) by (le))", "legendFormat": "médiane" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "histogram_quantile(0.9, sum(rate(pyrenex_prediction_proba_bucket[1h])) by (le))", "legendFormat": "p90" }
+      ]
+    }
+  ]
+}
