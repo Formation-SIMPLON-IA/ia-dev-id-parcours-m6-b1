@@ -65,13 +65,13 @@ affiche une courbe dès la première prédiction, sans rien installer de plus.
   "title": "Comportement — probabilités prédites (médiane / p90)",
   "type": "timeseries",
   "datasource": { "type": "prometheus", "uid": "prometheus" },
-  "fieldConfig": { "defaults": { "min": 0, "max": 1 } },
+  "fieldConfig": { "defaults": { "unit": "short" } },
   "targets": [
     { "refId": "A",
-      "expr": "histogram_quantile(0.5, sum(rate(pyrenex_prediction_proba_bucket[1h])) by (le))",
+      "expr": "histogram_quantile(0.5, sum(rate(pyrenex_prediction_proba_bucket[5m])) by (le))",
       "legendFormat": "médiane" },
     { "refId": "B",
-      "expr": "histogram_quantile(0.9, sum(rate(pyrenex_prediction_proba_bucket[1h])) by (le))",
+      "expr": "histogram_quantile(0.9, sum(rate(pyrenex_prediction_proba_bucket[5m])) by (le))",
       "legendFormat": "p90" }
   ]
 }
@@ -114,6 +114,8 @@ affiche une courbe dès la première prédiction, sans rien installer de plus.
 | Poser le JSON dans `grafana/dashboards/` | **Jamais chargé, aucun message d'erreur** — le compose M5 ne monte que `./grafana/provisioning` |
 | `histogram_quantile()` sur la métrique sans `_bucket` | Panel vide / erreur PromQL |
 | Oublier `rate()` sur les buckets | Quantile faux (buckets = compteurs cumulatifs) |
+| Tracer des **débits** par classe (`sum(rate(...)) by (predicted_class)`) | Les courbes suivent le volume de trafic ; la **part** de défauts prédits, le vrai signal, est invisible → diviser par le total, unité `percentunit`, axe libre |
+| Fenêtre `rate()` trop large (`[1h]`) ou trop courte (`[10s]` pour un scrape à 15 s) | Lignes plates qui masquent la marche, ou « No data » (il faut ≥ 2 scrapes dans la fenêtre) |
 | `uid` de datasource non référencé | « Datasource not found » au provisioning |
 | Panel sans question ni action associée | Dashboard décoratif, jamais consulté en astreinte |
 
@@ -123,6 +125,7 @@ affiche une courbe dès la première prédiction, sans rien installer de plus.
 | PSI « No data » | métrique batch jamais publiée à Prometheus (normal — cf. mission ⭐) |
 | Le dashboard n'apparaît pas du tout dans Grafana | JSON hors de `grafana/provisioning/dashboards/` |
 | Quantile de proba vide ou aberrant | `_bucket` oublié, ou `rate()` manquant |
+| Courbe plate alors que le trafic a changé | fenêtre trop large, axe borné 0-1, ou buckets de l'histogramme trop grossiers (0,10) |
 | « Datasource not found » | mauvais `uid` dans le panel |
 
 ## Pour aller plus loin
